@@ -1,3 +1,11 @@
+import {
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  useAudioPlayer,
+  useAudioRecorder,
+  useAudioRecorderState,
+} from "expo-audio";
 import { StatusBar } from "expo-status-bar";
 import {
   CheckIcon,
@@ -11,17 +19,13 @@ import {
 import { useEffect, useState } from "react";
 import { Alert, Modal, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+
+import { router } from "expo-router";
+
 import { colors } from "../styles/colors";
 import { cn } from "../utils/cn";
 import { Button } from "./Button";
-import {
-  AudioModule,
-  RecordingPresets,
-  setAudioModeAsync,
-  useAudioPlayer,
-  useAudioRecorder,
-  useAudioRecorderState,
-} from "expo-audio";
+import { useCreateMeal } from "../hooks/useCreateMeal";
 
 interface IAudioModalProps {
   open: boolean;
@@ -35,11 +39,20 @@ export function AudioModal({ onClose, open }: IAudioModalProps) {
   const { isRecording } = useAudioRecorderState(audioRecorder);
   const player = useAudioPlayer(audioUri);
 
+  const { createMeal, isLoading } = useCreateMeal({
+    fileType: "audio/m4a",
+    onSuccess: (mealId: any) => {
+      router.push(`/meals/${mealId}`);
+      handleCloseModal();
+    },
+  });
+
   useEffect(() => {
     (async () => {
       const status = await AudioModule.requestRecordingPermissionsAsync();
+
       if (!status.granted) {
-        Alert.alert("Permission to access microphone was denied");
+        Alert.alert("A permissão para acessar o microfone foi negada.");
       }
 
       setAudioModeAsync({
@@ -65,7 +78,6 @@ export function AudioModal({ onClose, open }: IAudioModalProps) {
 
   function handleCloseModal() {
     setAudioUri(null);
-
     onClose();
   }
 
@@ -165,7 +177,11 @@ export function AudioModal({ onClose, open }: IAudioModalProps) {
                   </Button>
                 )}
 
-                <Button size="icon">
+                <Button
+                  size="icon"
+                  onPress={() => createMeal(audioUri)}
+                  loading={isLoading}
+                >
                   <CheckIcon size={20} color={colors.black[700]} />
                 </Button>
               </View>
